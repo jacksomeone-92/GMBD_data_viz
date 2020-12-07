@@ -120,4 +120,6 @@ ggplot(data_over_time, aes(x=hour, y=total_spend, color = customer_country)) + g
 data_day <- data %>% 
   filter(category %in% c("Accommodation"))
 
-ggplot(data_day, aes(x=hour, y=amount, color=weekday))+geom_density(aes(fill=amount), alpha=0.7))  
+ggplot(data_day, aes(x=hour, fill=weekday))+geom_density(alpha=0.7)
+
+#conclusion: higher peak on thursdays around 8am, explore if promotions would trigger more transactions on friday for example
