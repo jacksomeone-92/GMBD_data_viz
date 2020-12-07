@@ -11,12 +11,6 @@ setwd(dir)
 data <- read.csv("madrid_transactions.csv", header=TRUE, sep=",")
 head(data)
 
-#first EDA
-#install.packages('DataExplorer')
-library(DataExplorer)
-
-create_report(data)
-
 #Is there a particular time in which tourists are buying?
 a <- ggplot(data, aes(hour)) + geom_histogram(bins = 24)
 a
@@ -42,7 +36,7 @@ data1 <- data %>%
 data1 <- data1 %>% 
   filter(amount > 150)
 
-ggplot(data1, aes(customer_country, amount)) + geom_col()
+ggplot(data1, aes(reorder(customer_country, -amount, sum), amount)) + geom_col()
 
 #Is there any relationship between day of the week and consumption?
 data2 <- data %>% 
@@ -50,7 +44,7 @@ data2 <- data %>%
   summarise(amount = sum(amount))
 
 
-ggplot(data2, aes(weekday,amount)) + geom_col()
+ggplot(data2, aes(reorder(weekday,-amount, sum), amount)) + geom_col()
 
 #Do high end fashion retailers need to focus more on attracting Australian visitors than on Chinese? 
 
@@ -60,4 +54,70 @@ data3 <- data %>%
   group_by(customer_country) %>% 
   summarise(amount = mean(amount))
 
-ggplot(data3, aes(customer_country, amount)) + geom_col()
+c <- ggplot(data3, aes(reorder(customer_country, -amount), amount)) + geom_col()
+c + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+#Avg spend by category
+##library(data.table)
+#transactions <- as.data.table(data)
+
+Avg_Spend_CAT <- data %>%
+  group_by(category) %>%
+  summarise(n = n(),total_spend=sum(amount),Avg_Spend = mean(amount))
+
+ggplot(Avg_Spend_CAT, aes(x = total_spend, y = Avg_Spend, color=category)) + 
+  geom_point() + geom_text(aes(label=category),hjust=0, vjust=0)
+
+#average spending for upper left quadrant over time
+datax <- data %>% 
+  filter(category %in% c("Agencias de viajes", "AutomociÃ³n", "Culture & Leisure", "Transportation", "Books & Music")) %>% 
+  group_by(category,hour) %>% 
+  summarise(n = n(),total_spend=sum(amount),Avg_Spend = mean(amount), hour = hour, category = category)
+
+ggplot(datax, aes(x=hour, y=Avg_Spend, color = category)) + geom_line() + geom_point()
+
+#volumne for upper left quadrant over time (only taking into consideration categories with more than 10 transactions)
+datax <- data %>% 
+  filter(category %in% c("Culture & Leisure", "Transportation", "Books & Music")) %>% 
+  group_by(category, hour) %>% 
+  summarise(n = n(),transactions = n, category = category, hour = hour)
+
+ggplot(datax, aes(x=hour, y=transactions, color = category)) + geom_line() + geom_point()
+
+#what nationalities do shop in these categories?
+Country_Spending <- data %>%
+  filter(category %in% c("Culture & Leisure", "Transportation", "Books & Music")) %>% 
+  filter(amount != 0) %>%
+  group_by(customer_country) %>%
+  summarise(n = n(),avg_spend=mean(amount),transactions = n)
+
+ggplot(Country_Spending, aes(x = transactions, y = avg_spend, color = customer_country)) + geom_point() + geom_text(aes(label=customer_country),hjust=0, vjust=0)
+
+#one conclusion would be to target customer from countries NO, MY, SA and IN since they seems to spend a considerable amount but only have a very few transactions
+
+#Accomodation by top 10 countries total spending
+
+Accomodation <- data %>%
+  filter(category %in% c("Accommodation")) %>% 
+  group_by(customer_country) %>%
+  summarise(n = n(),total_spend=sum(amount),avg_spend=mean(amount), transactions = n) %>%
+  top_n(n=10, wt=total_spend) 
+
+ggplot(Accomodation, aes(x=transactions, y=total_spend)) + 
+  geom_point(aes(col=customer_country, size=avg_spend)) +
+  geom_text(aes(label=customer_country),hjust=0, vjust=0)
+
+#spending on accomodation over time - check why top_n does not work
+data_over_time <- data %>% 
+  filter(category %in% c("Accommodation")) %>% 
+  group_by(customer_country, hour) %>% 
+  summarise(n = n(),total_spend=sum(amount),avg_spend=mean(amount), hour = hour) %>%
+  top_n(n=10, wt=total_spend) 
+
+ggplot(data_over_time, aes(x=hour, y=total_spend, color = customer_country)) + geom_line() + geom_point()
+
+#compare spending over time and day
+data_day <- data %>% 
+  filter(category %in% c("Accommodation"))
+
+ggplot(data_day, aes(x=hour, y=amount, color=weekday))+geom_density(aes(fill=amount), alpha=0.7))  
