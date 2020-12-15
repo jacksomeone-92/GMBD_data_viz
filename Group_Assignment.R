@@ -68,6 +68,8 @@ Avg_Spend_CAT <- data %>%
 ggplot(Avg_Spend_CAT, aes(x = total_spend, y = Avg_Spend, color=category)) + 
   geom_point() + geom_text(aes(label=category),hjust=0, vjust=0)
 
+# NEW PLOTS
+
 #average spending for upper left quadrant over time
 datax <- data %>% 
   filter(category %in% c("Agencias de viajes", "AutomociÃ³n", "Culture & Leisure", "Transportation", "Books & Music")) %>% 
@@ -103,23 +105,29 @@ Accomodation <- data %>%
   summarise(n = n(),total_spend=sum(amount),avg_spend=mean(amount), transactions = n) %>%
   top_n(n=10, wt=total_spend) 
 
-ggplot(Accomodation, aes(x=transactions, y=total_spend)) + 
+a <- ggplot(Accomodation, aes(x=transactions, y=total_spend)) + 
   geom_point(aes(col=customer_country, size=avg_spend)) +
   geom_text(aes(label=customer_country),hjust=0, vjust=0)
+
+a + labs(title= "Top 10 nationalities Spending on Accomodation", x="Transactions",y="Total Amount Spend")
 
 #spending on accomodation over time - check why top_n does not work
 data_over_time <- data %>% 
   filter(category %in% c("Accommodation")) %>% 
   group_by(customer_country, hour) %>% 
-  summarise(n = n(),total_spend=sum(amount),avg_spend=mean(amount), hour = hour) %>%
-  top_n(n=10, wt=total_spend) 
+  summarise(n = n(),total_spend=sum(amount),avg_spend=mean(amount), hour = hour)
 
-ggplot(data_over_time, aes(x=hour, y=total_spend, color = customer_country)) + geom_line() + geom_point()
+a <- ggplot(data_over_time, aes(x=hour, y=total_spend, color = customer_country)) + geom_line() + geom_point()
+a + labs(title= "Nationalities Spending on Accomodation during 24 Hours", x="Hour",y="Total Amount Spend")
 
 #compare spending over time and day
+theme_set(theme_classic())
+
 data_day <- data %>% 
   filter(category %in% c("Accommodation"))
 
-ggplot(data_day, aes(x=hour, fill=weekday))+geom_density(alpha=0.7)
+a <- ggplot(data_day, aes(x=hour, fill=weekday))+geom_density(alpha=0.7)
 
-#conclusion: higher peak on thursdays around 8am, explore if promotions would trigger more transactions on friday for example
+a + labs(title= "Compare Spending over Time and Weekday", x="Hour",y="Density")
+
+#conclusion: higher peak on thursdays around 8am, explore if promotions would trigger more transactions during the same time on friday for example
